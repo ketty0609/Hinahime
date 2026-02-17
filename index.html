@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Hina & Hime 飲食日記</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff5fa2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="icon-512.png">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont;
+background:linear-gradient(#ffd6e8,#ffeef5);
+}
+
+.header{
+text-align:center;
+padding:20px 10px;
+color:#ff2d7a;
+font-weight:bold;
+font-size:22px;
+}
+
+.tabs{
+display:flex;
+justify-content:center;
+gap:10px;
+flex-wrap:wrap;
+margin-bottom:10px;
+}
+
+.tab{
+background:#ffc1d9;
+padding:8px 16px;
+border-radius:20px;
+font-size:14px;
+cursor:pointer;
+}
+
+.tab.active{
+background:#ff5fa2;
+color:white;
+}
+
+.page{display:none;padding:10px;}
+.page.active{display:block;}
+
+.card{
+background:white;
+border-radius:20px;
+padding:15px;
+margin:15px auto;
+max-width:420px;
+box-shadow:0 4px 10px rgba(0,0,0,0.1);
+}
+
+.profile{
+display:flex;
+align-items:center;
+gap:15px;
+}
+
+.avatar{
+width:70px;
+height:70px;
+border-radius:50%;
+object-fit:cover;
+border:4px solid #ff5fa2;
+}
+
+.date{
+margin:10px 0;
+background:#f2f2f2;
+padding:8px;
+border-radius:12px;
+text-align:center;
+font-weight:bold;
+}
+
+input,select,button{
+width:100%;
+padding:10px;
+margin:6px 0;
+border-radius:12px;
+border:1px solid #ddd;
+font-size:14px;
+box-sizing:border-box;
+}
+
+button{
+background:#ff5fa2;
+color:white;
+border:none;
+font-weight:bold;
+}
+
+.progress{
+background:#eee;
+height:10px;
+border-radius:10px;
+margin-top:5px;
+overflow:hidden;
+}
+
+.progress-bar{
+height:10px;
+background:#ff5fa2;
+}
+
+.water-bar{
+background:#00bcd4;
+}
+
+.delete-btn{
+background:#ff3b30;
+margin-top:5px;
+}
+
+.section-title{
+font-weight:bold;
+margin:10px 0;
+}
+
+</style>
+</head>
+<body>
+
+<div class="header">🌸 Hina & Hime 飲食日記</div>
+
+<div class="tabs">
+<div class="tab active" onclick="showPage('today')">今日</div>
+<div class="tab" onclick="showPage('product')">產品</div>
+<div class="tab" onclick="showPage('chart')">圖表</div>
+<div class="tab" onclick="showPage('weight')">體重</div>
+<div class="tab" onclick="showPage('export')">匯出</div>
+</div>
+
+<!-- 今日 -->
+<div id="today" class="page active"></div>
+
+<!-- 產品 -->
+<div id="product" class="page">
+<div class="card">
+<div class="section-title">新增產品</div>
+<input id="pname" placeholder="產品名稱">
+<input id="pkcal" placeholder="每100g熱量">
+<input id="pwater" placeholder="水分%">
+<select id="ptype">
+<option value="濕食">濕食</option>
+<option value="乾食">乾食</option>
+<option value="湯罐">湯罐</option>
+</select>
+<button onclick="addProduct()">新增產品</button>
+</div>
+
+<div class="card">
+<div class="section-title">產品列表</div>
+<select onchange="renderProductList(this.value)">
+<option value="全部">全部</option>
+<option value="濕食">濕食</option>
+<option value="乾食">乾食</option>
+<option value="湯罐">湯罐</option>
+</select>
+<div id="productList"></div>
+</div>
+</div>
+
+<!-- 圖表 -->
+<div id="chart" class="page">
+<div class="card">
+<canvas id="kcalChart"></canvas>
+</div>
+<div class="card">
+<canvas id="waterChart"></canvas>
+</div>
+</div>
+
+<!-- 體重 -->
+<div id="weight" class="page">
+<div class="card">
+<input type="date" id="weightDate">
+<input placeholder="Hina 體重 kg" id="hinaWeight">
+<input placeholder="Hime 體重 kg" id="himeWeight">
+<button onclick="addWeight()">儲存體重</button>
+</div>
+<div class="card" id="weightList"></div>
+</div>
+
+<!-- 匯出 -->
+<div id="export" class="page">
+<div class="card">
+<input type="date" id="startDate">
+<input type="date" id="endDate">
+<button onclick="exportData()">匯出期間資料</button>
+</div>
+</div>
+
+<script>
+
+let products=JSON.parse(localStorage.getItem("products")||"[]");
+let logs=JSON.parse(localStorage.getItem("logs")||"{}");
+let weights=JSON.parse(localStorage.getItem("weights")||"[]");
+
+function saveAll(){
+localStorage.setItem("products",JSON.stringify(products));
+localStorage.setItem("logs",JSON.stringify(logs));
+localStorage.setItem("weights",JSON.stringify(weights));
+}
+
+function showPage(id){
+document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+document.getElementById(id).classList.add("active");
+document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+event.target.classList.add("active");
+if(id==="chart")renderCharts();
+}
+
+function todayKey(){
+return new Date().toISOString().slice(0,10);
+}
+
+function rocDate(){
+let d=new Date();
+return (d.getFullYear()-1911)+"年"+(d.getMonth()+1)+"月"+d.getDate()+"日";
+}
+
+function renderToday(){
+let container=document.getElementById("today");
+container.innerHTML="";
+["Hina","Hime"].forEach(cat=>{
+let totalKcal=0,totalWater=0;
+if(logs[todayKey()]&&logs[todayKey()][cat]){
+logs[todayKey()][cat].forEach(l=>{
+totalKcal+=l.kcal;
+totalWater+=l.water;
+});
+}
+container.innerHTML+=`
+<div class="card">
+<div class="profile">
+<img src="${cat==="Hina"?"IMG_0493.jpeg":"IMG_0492.jpeg"}" class="avatar">
+<div><b>${cat}</b></div>
+</div>
+<div class="date">${rocDate()}</div>
+<input placeholder="克數" id="${cat}g">
+<input placeholder="額外加水 ml" id="${cat}w">
+<select id="${cat}p">
+${products.map(p=>`<option value="${p.name}">${p.name}</option>`).join("")}
+</select>
+<button onclick="addLog('${cat}')">新增餵食</button>
+🔥 今日 ${totalKcal} kcal / 目標 220
+<div class="progress"><div class="progress-bar" style="width:${Math.min(totalKcal/220*100,100)}%"></div></div>
+💧 今日 ${totalWater} ml
+<div class="progress"><div class="progress-bar water-bar" style="width:${Math.min(totalWater/200*100,100)}%"></div></div>
+</div>
+`;
+});
+}
+
+function addProduct(){
+products.push({
+name:pname.value,
+kcal:parseFloat(pkcal.value),
+water:parseFloat(pwater.value),
+type:ptype.value
+});
+saveAll();
+renderProductList("全部");
+}
+
+function renderProductList(type){
+let list=document.getElementById("productList");
+list.innerHTML="";
+products.filter(p=>type==="全部"||p.type===type).forEach((p,i)=>{
+list.innerHTML+=`
+<div>${p.name} (${p.type})
+<button onclick="deleteProduct(${i})">刪</button></div>`;
+});
+}
+
+function deleteProduct(i){
+products.splice(i,1);
+saveAll();
+renderProductList("全部");
+}
+
+function addLog(cat){
+let g=parseFloat(document.getElementById(cat+"g").value||0);
+let w=parseFloat(document.getElementById(cat+"w").value||0);
+let pname=document.getElementById(cat+"p").value;
+let p=products.find(x=>x.name===pname);
+if(!logs[todayKey()])logs[todayKey()]={};
+if(!logs[todayKey()][cat])logs[todayKey()][cat]=[];
+logs[todayKey()][cat].push({
+kcal:g/100*p.kcal,
+water:g/100*(p.water/100*100)+w
+});
+saveAll();
+renderToday();
+}
+
+function renderCharts(){
+let dates=Object.keys(logs).slice(-7);
+let hinaK=[],himeK=[];
+dates.forEach(d=>{
+let hk=0,hk2=0;
+if(logs[d]){
+if(logs[d]["Hina"])logs[d]["Hina"].forEach(l=>hk+=l.kcal);
+if(logs[d]["Hime"])logs[d]["Hime"].forEach(l=>hk2+=l.kcal);
+}
+hinaK.push(hk);
+himeK.push(hk2);
+});
+new Chart(document.getElementById("kcalChart"),{
+type:"line",
+data:{
+labels:dates,
+datasets:[
+{label:"Hina",data:hinaK,borderColor:"#ff2d7a"},
+{label:"Hime",data:himeK,borderColor:"#00bcd4"}
+]
+}
+});
+}
+
+function addWeight(){
+weights.push({
+date:weightDate.value,
+hina:hinaWeight.value,
+hime:himeWeight.value
+});
+saveAll();
+renderWeight();
+}
+
+function renderWeight(){
+let list=document.getElementById("weightList");
+list.innerHTML=weights.map(w=>`${w.date} Hina:${w.hina}kg Hime:${w.hime}kg`).join("<br>");
+}
+
+function exportData(){
+let s=startDate.value,e=endDate.value;
+let out=Object.keys(logs).filter(d=>d>=s&&d<=e);
+alert(JSON.stringify(out,null,2));
+}
+
+renderToday();
+renderProductList("全部");
+renderWeight();
+
+</script>
+
+</body>
+</html>
