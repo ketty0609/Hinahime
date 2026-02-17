@@ -18,11 +18,7 @@ margin:0;
 font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial;
 background:linear-gradient(180deg,#ffd6eb,#ffeef7);
 }
-.wrapper{
-max-width:520px;
-margin:0 auto;
-padding:20px 16px 40px;
-}
+.wrapper{max-width:520px;margin:0 auto;padding:20px 16px 40px;}
 h2{text-align:center;color:#e91e63;}
 .tabs{display:flex;gap:6px;margin-bottom:14px;}
 .tabs button{
@@ -78,18 +74,16 @@ font-size:13px;margin-top:6px;
 <button onclick="showTab('weight')" id="tab-weight">體重</button>
 </div>
 
-<!-- 今日 -->
 <div id="home" class="tab-content">
 
 <div class="card">
-<input type="date" id="datePicker" onchange="changeDate()">
+<input type="date" id="datePicker">
 </div>
 
 <div id="catsContainer"></div>
 
 </div>
 
-<!-- 食物庫 -->
 <div id="foods" class="tab-content">
 <div class="card">
 <h3>新增食物</h3>
@@ -103,14 +97,12 @@ font-size:13px;margin-top:6px;
 </select>
 <button class="action" onclick="addFood()">新增</button>
 </div>
-
 <div class="card">
 <h3>食物列表</h3>
 <div id="foodList"></div>
 </div>
 </div>
 
-<!-- 體重 -->
 <div id="weight" class="tab-content">
 <div class="card">
 <h3>新增體重</h3>
@@ -132,12 +124,13 @@ let foods = JSON.parse(localStorage.getItem("foods")) || [];
 let records = JSON.parse(localStorage.getItem("records")) || {};
 let weights = JSON.parse(localStorage.getItem("weights")) || [];
 
-let currentDate;
+function getToday(){
+return new Date().toISOString().split('T')[0];
+}
 
-function initToday(){
-const today = new Date().toISOString().split('T')[0];
-currentDate = today;
-document.getElementById("datePicker").value = today;
+function getCurrentDate(){
+const picker=document.getElementById("datePicker");
+return picker.value || getToday();
 }
 
 function save(){
@@ -154,11 +147,6 @@ document.getElementById("tab-"+tab).classList.add("active");
 }
 showTab("home");
 
-function changeDate(){
-currentDate=document.getElementById("datePicker").value;
-updateDisplay();
-}
-
 function calculateNeed(w){
 return Math.round(70*Math.pow(w,0.75)*1.2);
 }
@@ -169,7 +157,6 @@ container.innerHTML="";
 ["hina","hime"].forEach(cat=>{
 const name=cat==="hina"?"Hina":"Hime";
 const img=cat==="hina"?"IMG_0493.jpeg":"IMG_0492.jpeg";
-
 container.innerHTML+=`
 <div class="card">
 <div class="cat-header">
@@ -238,6 +225,7 @@ renderFoodList();
 }
 
 function addMeal(cat){
+let date=getCurrentDate();
 let index=document.getElementById(cat+"Food").value;
 let grams=Number(document.getElementById(cat+"Grams").value);
 let extra=Number(document.getElementById(cat+"Extra").value)||0;
@@ -248,11 +236,11 @@ let cal=grams/100*food.cal;
 let water=food.type!=="dry"?grams*(food.water/100):0;
 if(food.type==="soup")water+=extra;
 
-if(!records[currentDate]){
-records[currentDate]={hina:[],hime:[]};
+if(!records[date]){
+records[date]={hina:[],hime:[]};
 }
 
-records[currentDate][cat].push({
+records[date][cat].push({
 name:food.name,
 grams,
 cal,
@@ -264,7 +252,8 @@ updateDisplay();
 }
 
 function updateDisplay(){
-let day=records[currentDate]||{hina:[],hime:[]};
+let date=getCurrentDate();
+let day=records[date]||{hina:[],hime:[]};
 let latest=weights.length?weights[weights.length-1]:{hina:3.5,hime:2.5};
 
 ["hina","hime"].forEach(cat=>{
@@ -288,14 +277,15 @@ document.getElementById(cat+"Bar").style.width=percent+"%";
 }
 
 function deleteMeal(cat,i){
-records[currentDate][cat].splice(i,1);
+let date=getCurrentDate();
+records[date][cat].splice(i,1);
 save();
 updateDisplay();
 }
 
 function addWeight(){
 weights.push({
-date:currentDate,
+date:getCurrentDate(),
 hina:Number(hinaWeight.value),
 hime:Number(himeWeight.value)
 });
@@ -322,8 +312,8 @@ renderWeightList();
 updateDisplay();
 }
 
-window.addEventListener("load",()=>{
-initToday();
+document.addEventListener("DOMContentLoaded",()=>{
+document.getElementById("datePicker").value=getToday();
 renderCats();
 renderFoodList();
 renderWeightList();
@@ -333,3 +323,4 @@ updateDisplay();
 </script>
 </body>
 </html>
+
