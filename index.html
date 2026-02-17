@@ -240,90 +240,112 @@ canvas{max-height:250px;}
 </div>
 
 <script>
-let products=JSON.parse(localStorage.getItem("products"))||[];
-let meals=JSON.parse(localStorage.getItem("meals"))||[];
-let weights=JSON.parse(localStorage.getItem("weights"))||[];
 
-function showTab(tab){
-document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
-document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove("active"));
-document.getElementById(tab).style.display='block';
-document.getElementById("tab-"+tab).classList.add("active");
-}
-showTab("home");
+let products = JSON.parse(localStorage.getItem("products")) || [];
+let meals = JSON.parse(localStorage.getItem("meals")) || [];
+let weights = JSON.parse(localStorage.getItem("weights")) || [];
 
-function todayMinguo(){
-let d=new Date();
-return (d.getFullYear()-1911)+"年"+
-(d.getMonth()+1).toString().padStart(2,"0")+"月"+
-d.getDate().toString().padStart(2,"0")+"日";
-}
-hinaDate.innerText=todayMinguo();
-himeDate.innerText=todayMinguo();
+let currentDate = new Date().toISOString().split('T')[0];
 
 function save(){
-localStorage.setItem("products",JSON.stringify(products));
-localStorage.setItem("meals",JSON.stringify(meals));
-localStorage.setItem("weights",JSON.stringify(weights));
+localStorage.setItem("products", JSON.stringify(products));
+localStorage.setItem("meals", JSON.stringify(meals));
+localStorage.setItem("weights", JSON.stringify(weights));
 }
 
-function addProduct(){
-products.push({name:pname.value,cal:Number(cal.value),water:Number(water.value),type:ptype.value});
-save();
-updateProducts();
-renderProductList();
+/* 日期控制 */
+function initDate(){
+let dateInput = document.getElementById("selectedDate");
+if(dateInput){
+dateInput.value = currentDate;
+}
 }
 
-function renderProductList(){
-let type=filterType.value;
-productList.innerHTML="";
-products.forEach((p,i)=>{
-if(type==="all"||p.type===type){
-productList.innerHTML+=`
-<div class="meal-row">
-<div><strong>${p.name}</strong><br>🔥 ${p.cal} kcal / 💧 ${p.water}%</div>
-<button class="small-btn" onclick="deleteProduct(${i})">刪</button>
-</div>`;
-}
-});
+function changeDate(){
+currentDate = document.getElementById("selectedDate").value;
+updateDisplay();
+drawCharts();
 }
 
-function deleteProduct(i){
-products.splice(i,1);
-save();
-updateProducts();
-renderProductList();
+/* 計算需求 */
+function calculateNeed(w){
+return Math.round(70 * Math.pow(w,0.75) * 1.2);
 }
 
-function updateProducts(){
-hinaProduct.innerHTML="";
-himeProduct.innerHTML="";
-products.forEach((p,i)=>{
-let opt=document.createElement("option");
-opt.value=i;
-opt.text=p.name;
-hinaProduct.appendChild(opt);
-himeProduct.appendChild(opt.cloneNode(true));
-});
-}
-
+/* 新增餐 */
 function addMeal(cat){
-let grams=Number(document.getElementById(cat+"Grams").value);
-let extra=Number(document.getElementById(cat+"ExtraWater").value)||0;
-let product=products[document.getElementById(cat+"Product").value];
-if(!product||!grams)return;
+let grams = Number(document.getElementById(cat+"Grams").value);
+let extra = Number(document.getElementById(cat+"ExtraWater").value) || 0;
+let product = products[document.getElementById(cat+"Product").value];
 
-let cal=grams/100*product.cal;
-let water=product.type!=="dry"?grams*(product.water/100):0;
-if(product.type==="soup")water+=extra;
+if(!product || !grams) return;
 
-let date=new Date().toISOString().split('T')[0];
-meals.push({date,cat,cal,water});
+let cal = grams/100 * product.cal;
+let water = product.type !== "dry" ? grams*(product.water/100) : 0;
+if(product.type === "soup") water += extra;
+
+meals.push({
+date: currentDate,
+cat,
+cal,
+water
+});
+
 save();
 updateDisplay();
 drawCharts();
 }
 
+/* 更新畫面 */
+function updateDisplay(){
+
+let h1 = 0;
+let h2 = 0;
+
+hinaMeals.innerHTML = "";
+himeMeals.innerHTML = "";
+
+meals.forEach((m,i)=>{
+if(m.date === currentDate){
+
+let row = `🔥${Math.round(m.cal)} 💧${Math.round(m.water)}`;
+
+if(m.cat === "hina"){
+h1 += m.cal;
+hinaMeals.innerHTML += `<div class="meal-row">${row}<button class="small-btn" onclick="deleteMeal(${i})">刪</button></div>`;
+}else{
+h2 += m.cal;
+himeMeals.innerHTML += `<div class="meal-row">${row}<button class="small-btn" onclick="deleteMeal(${i})">刪</button></div>`;
+}
+
+}
+});
+
+let latest = weights.length ? weights[weights.length-1] : {hina:3.5, hime:2.5};
+
+let needH1 = calculateNeed(latest.hina);
+let needH2 = calculateNeed(latest.hime);
+
+hinaTotal.innerHTML = `🔥 今日熱量 ${Math.round(h1)} / ${needH1} kcal`;
+himeTotal.innerHTML = `🔥 今日熱量 ${Math.round(h2)} / ${needH2} kcal`;
+
+let p1 = Math.min(100, (h1/needH1)*100);
+let p2 = Math.min(100, (h2/needH2)*100);
+
+hinaBar.style.width = p1 + "%";
+himeBar.style.width = p2 + "%";
+
+hinaRemain.innerHTML = h1 > needH1 ?
+`<div class="remain-text">⚠ 超過 ${Math.round(h1-needH1)} kcal</div>` :
+`<div class="remain-text">還差 ${Math.round(needH1-h1)} kcal</div>`;
+
+himeRemain.innerHTML = h2 > needH2 ?
+`<div class="remain-text">⚠ 超過 ${Math.round(h2-needH2)} kcal</div>` :
+`<div class="remain-text">還差 ${Math.round(needH2-h2)} kcal</div>`;
+
+}
+
+/* 刪除餐 */
 function deleteMeal(i){
 meals.splice(i,1);
 save();
@@ -331,134 +353,68 @@ updateDisplay();
 drawCharts();
 }
 
-function calculateNeed(w){
-return Math.round(70*Math.pow(w,0.75)*1.2);
-}
-
-function updateDisplay(){
-let today=new Date().toISOString().split('T')[0];
-let h1=0,h2=0;
-hinaMeals.innerHTML="";
-himeMeals.innerHTML="";
-meals.forEach((m,i)=>{
-if(m.date===today){
-let row=`🔥${Math.round(m.cal)} 💧${Math.round(m.water)}`;
-if(m.cat==="hina"){
-h1+=m.cal;
-hinaMeals.innerHTML+=`<div class="meal-row">${row}<button class="small-btn" onclick="deleteMeal(${i})">刪</button></div>`;
-}else{
-h2+=m.cal;
-himeMeals.innerHTML+=`<div class="meal-row">${row}<button class="small-btn" onclick="deleteMeal(${i})">刪</button></div>`;
-}
-}
-});
-
-let latest=weights.length?weights[weights.length-1]:{hina:3.5,hime:2.5};
-let needH1=calculateNeed(latest.hina);
-let needH2=calculateNeed(latest.hime);
-
-hinaTotal.innerHTML=`🔥 今日熱量 ${Math.round(h1)} / ${needH1} kcal`;
-himeTotal.innerHTML=`🔥 今日熱量 ${Math.round(h2)} / ${needH2} kcal`;
-
-let p1=Math.min(100,(h1/needH1)*100);
-let p2=Math.min(100,(h2/needH2)*100);
-
-hinaBar.style.width=p1+"%";
-himeBar.style.width=p2+"%";
-
-hinaRemain.innerHTML=h1>needH1?
-`<div class="remain-text">⚠ 超過 ${Math.round(h1-needH1)} kcal</div>`:
-`<div class="remain-text">還差 ${Math.round(needH1-h1)} kcal</div>`;
-
-himeRemain.innerHTML=h2>needH2?
-`<div class="remain-text">⚠ 超過 ${Math.round(h2-needH2)} kcal</div>`:
-`<div class="remain-text">還差 ${Math.round(needH2-h2)} kcal</div>`;
-}
-
-function saveWeight(){
-let date=new Date().toISOString().split('T')[0];
-weights.push({date,hina:Number(hinaWeight.value),hime:Number(himeWeight.value)});
-save();
-renderWeightList();
-drawWeightChart();
-}
-
-function renderWeightList(){
-weightList.innerHTML="";
-weights.slice().reverse().forEach((w,i)=>{
-weightList.innerHTML+=`
-<div class="meal-row">
-${w.date} | Hina ${w.hina}kg | Hime ${w.hime}kg
-<button class="small-btn" onclick="deleteWeight(${weights.length-1-i})">刪</button>
-</div>`;
-});
-}
-
-function deleteWeight(i){
-weights.splice(i,1);
-save();
-renderWeightList();
-drawWeightChart();
-}
-
+/* 圖表 */
 function drawCharts(){
-let labels=[],cal1=[],cal2=[],water1=[],water2=[];
+
+if(window.calChartInstance) window.calChartInstance.destroy();
+if(window.waterChartInstance) window.waterChartInstance.destroy();
+
+let labels = [];
+let cal1 = [];
+let cal2 = [];
+let water1 = [];
+let water2 = [];
+
 for(let i=6;i>=0;i--){
-let d=new Date();
+let d = new Date(currentDate);
 d.setDate(d.getDate()-i);
-let ds=d.toISOString().split('T')[0];
+let ds = d.toISOString().split('T')[0];
+
 labels.push(ds.slice(5));
+
 let c1=0,c2=0,w1=0,w2=0;
+
 meals.forEach(m=>{
-if(m.date===ds){
-if(m.cat==="hina"){c1+=m.cal;w1+=m.water;}
-else{c2+=m.cal;w2+=m.water;}
+if(m.date === ds){
+if(m.cat==="hina"){ c1+=m.cal; w1+=m.water; }
+else{ c2+=m.cal; w2+=m.water; }
 }
 });
-cal1.push(c1);cal2.push(c2);
-water1.push(w1);water2.push(w2);
-}
-new Chart(calChart,{type:"line",data:{labels,
-datasets:[
-{label:"Hina",data:cal1,borderColor:"#e91e63",borderWidth:4},
-{label:"Hime",data:cal2,borderColor:"#8e24aa",borderWidth:4}
-]}});
-new Chart(waterChart,{type:"line",data:{labels,
-datasets:[
-{label:"Hina",data:water1,borderColor:"#1565c0",borderWidth:4},
-{label:"Hime",data:water2,borderColor:"#00897b",borderWidth:4}
-]}});
+
+cal1.push(c1);
+cal2.push(c2);
+water1.push(w1);
+water2.push(w2);
 }
 
-function drawWeightChart(){
-let labels=[],h1=[],h2=[];
-weights.slice(-7).forEach(w=>{
-labels.push(w.date.slice(5));
-h1.push(w.hina);
-h2.push(w.hime);
+window.calChartInstance = new Chart(calChart,{
+type:"line",
+data:{
+labels,
+datasets:[
+{label:"Hina", data:cal1, borderColor:"#e91e63", borderWidth:4},
+{label:"Hime", data:cal2, borderColor:"#8e24aa", borderWidth:4}
+]
+}
 });
-new Chart(weightChart,{type:"line",data:{labels,
+
+window.waterChartInstance = new Chart(waterChart,{
+type:"line",
+data:{
+labels,
 datasets:[
-{label:"Hina",data:h1,borderColor:"#ff9800",borderWidth:4},
-{label:"Hime",data:h2,borderColor:"#4caf50",borderWidth:4}
-]}});
+{label:"Hina", data:water1, borderColor:"#1565c0", borderWidth:4},
+{label:"Hime", data:water2, borderColor:"#00897b", borderWidth:4}
+]
+}
+});
+
 }
 
-function exportData(){
-let data={products,meals,weights};
-let blob=new Blob([JSON.stringify(data)],{type:"application/json"});
-let a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="hina_hime_data.json";
-a.click();
-}
-
-updateProducts();
-renderProductList();
+/* 初始化 */
 updateDisplay();
-renderWeightList();
 drawCharts();
-drawWeightChart();
+initDate();
 
 </script>
 </body>
