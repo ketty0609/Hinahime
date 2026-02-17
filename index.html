@@ -197,8 +197,16 @@ showTab("home");
 function changeDate(){
 currentDate=document.getElementById("datePicker").value;
 updateDisplay();
+// 每次開啟強制跳到今天
+window.addEventListener("load", () => {
+  const today = new Date().toISOString().split('T')[0];
+  currentDate = today;
+  document.getElementById("datePicker").value = today;
+  updateDisplay();
+});
 }
 
+  
 function calculateNeed(w){
 return Math.round(70*Math.pow(w,0.75)*1.2);
 }
