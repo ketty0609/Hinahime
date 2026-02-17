@@ -1,10 +1,11 @@
 {
   "name": "Hina & Hime 飲食日記",
-  "short_name": "Hina&Hime",
+  "short_name": "HinaHime",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#ffd6eb",
+  "background_color": "#ffeef7",
   "theme_color": "#ff6fa5",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "icon-512.png.PNG",
