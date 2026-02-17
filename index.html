@@ -58,6 +58,7 @@ border-radius:10px;margin-top:6px;overflow:hidden;
 }
 .progress-bar div{
 height:100%;width:0%;background:#e91e63;
+transition:0.3s;
 }
 .tab-content{display:none;}
 .meal-row{
@@ -84,53 +85,7 @@ font-size:13px;margin-top:6px;
 <input type="date" id="datePicker" onchange="changeDate()">
 </div>
 
-<!-- Hina -->
-<div class="card">
-<div class="cat-header">
-<img src="IMG_0493.jpeg" class="avatar">
-<h3>Hina</h3>
-</div>
-
-<select id="hinaCategory" onchange="updateFoodSelect('hina')">
-<option value="">選擇分類</option>
-<option value="wet">濕食</option>
-<option value="dry">乾食</option>
-<option value="soup">湯罐</option>
-</select>
-
-<select id="hinaFood"></select>
-<input type="number" id="hinaGrams" placeholder="克數">
-<input type="number" id="hinaExtra" placeholder="額外加水 ml">
-<button class="action" onclick="addMeal('hina')">新增餵食</button>
-
-<div id="hinaTotal"></div>
-<div class="progress-bar"><div id="hinaBar"></div></div>
-<div id="hinaMeals"></div>
-</div>
-
-<!-- Hime -->
-<div class="card">
-<div class="cat-header">
-<img src="IMG_0492.jpeg" class="avatar">
-<h3>Hime</h3>
-</div>
-
-<select id="himeCategory" onchange="updateFoodSelect('hime')">
-<option value="">選擇分類</option>
-<option value="wet">濕食</option>
-<option value="dry">乾食</option>
-<option value="soup">湯罐</option>
-</select>
-
-<select id="himeFood"></select>
-<input type="number" id="himeGrams" placeholder="克數">
-<input type="number" id="himeExtra" placeholder="額外加水 ml">
-<button class="action" onclick="addMeal('hime')">新增餵食</button>
-
-<div id="himeTotal"></div>
-<div class="progress-bar"><div id="himeBar"></div></div>
-<div id="himeMeals"></div>
-</div>
+<div id="catsContainer"></div>
 
 </div>
 
@@ -177,8 +132,13 @@ let foods = JSON.parse(localStorage.getItem("foods")) || [];
 let records = JSON.parse(localStorage.getItem("records")) || {};
 let weights = JSON.parse(localStorage.getItem("weights")) || [];
 
-let currentDate = new Date().toISOString().split('T')[0];
-document.getElementById("datePicker").value = currentDate;
+let currentDate;
+
+function initToday(){
+const today = new Date().toISOString().split('T')[0];
+currentDate = today;
+document.getElementById("datePicker").value = today;
+}
 
 function save(){
 localStorage.setItem("foods",JSON.stringify(foods));
@@ -197,18 +157,44 @@ showTab("home");
 function changeDate(){
 currentDate=document.getElementById("datePicker").value;
 updateDisplay();
-// 每次開啟強制跳到今天
-window.addEventListener("load", () => {
-  const today = new Date().toISOString().split('T')[0];
-  currentDate = today;
-  document.getElementById("datePicker").value = today;
-  updateDisplay();
-});
 }
 
-  
 function calculateNeed(w){
 return Math.round(70*Math.pow(w,0.75)*1.2);
+}
+
+function renderCats(){
+const container=document.getElementById("catsContainer");
+container.innerHTML="";
+["hina","hime"].forEach(cat=>{
+const name=cat==="hina"?"Hina":"Hime";
+const img=cat==="hina"?"IMG_0493.jpeg":"IMG_0492.jpeg";
+
+container.innerHTML+=`
+<div class="card">
+<div class="cat-header">
+<img src="${img}" class="avatar">
+<h3>${name}</h3>
+</div>
+
+<select id="${cat}Category" onchange="updateFoodSelect('${cat}')">
+<option value="">選擇分類</option>
+<option value="wet">濕食</option>
+<option value="dry">乾食</option>
+<option value="soup">湯罐</option>
+</select>
+
+<select id="${cat}Food"></select>
+<input type="number" id="${cat}Grams" placeholder="克數">
+<input type="number" id="${cat}Extra" placeholder="額外加水 ml">
+<button class="action" onclick="addMeal('${cat}')">新增餵食</button>
+
+<div id="${cat}Total"></div>
+<div class="progress-bar"><div id="${cat}Bar"></div></div>
+<div id="${cat}Meals"></div>
+</div>
+`;
+});
 }
 
 function updateFoodSelect(cat){
@@ -252,7 +238,6 @@ renderFoodList();
 }
 
 function addMeal(cat){
-let type=document.getElementById(cat+"Category").value;
 let index=document.getElementById(cat+"Food").value;
 let grams=Number(document.getElementById(cat+"Grams").value);
 let extra=Number(document.getElementById(cat+"Extra").value)||0;
@@ -324,7 +309,7 @@ weightList.innerHTML="";
 weights.slice().reverse().forEach((w,i)=>{
 weightList.innerHTML+=`
 <div class="meal-row">
-${w.date} H:${w.hina} H:${w.hime}
+${w.date} H:${w.hina}kg M:${w.hime}kg
 <button class="small-btn" onclick="deleteWeight(${weights.length-1-i})">刪</button>
 </div>`;
 });
@@ -337,9 +322,13 @@ renderWeightList();
 updateDisplay();
 }
 
+window.addEventListener("load",()=>{
+initToday();
+renderCats();
 renderFoodList();
 renderWeightList();
 updateDisplay();
+});
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js');
