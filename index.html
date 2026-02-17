@@ -144,6 +144,9 @@ canvas{max-height:250px;}
 
 <!-- 今日 -->
 <div id="home" class="tab-content">
+<div class="card">
+<input type="date" id="selectedDate" onchange="changeDate()">
+</div>
 
 <div class="card">
 <div class="cat-header">
@@ -243,6 +246,7 @@ canvas{max-height:250px;}
 let products=JSON.parse(localStorage.getItem("products"))||[];
 let meals=JSON.parse(localStorage.getItem("meals"))||[];
 let weights=JSON.parse(localStorage.getItem("weights"))||[];
+let currentDate = new Date().toISOString().split('T')[0];
 
 function showTab(tab){
 document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
@@ -317,7 +321,8 @@ let cal=grams/100*product.cal;
 let water=product.type!=="dry"?grams*(product.water/100):0;
 if(product.type==="soup")water+=extra;
 
-let date=new Date().toISOString().split('T')[0];
+let date=currentDate;
+
 meals.push({date,cat,cal,water});
 save();
 updateDisplay();
@@ -336,7 +341,8 @@ return Math.round(70*Math.pow(w,0.75)*1.2);
 }
 
 function updateDisplay(){
-let today=new Date().toISOString().split('T')[0];
+let today=currentDate;
+
 let h1=0,h2=0;
 hinaMeals.innerHTML="";
 himeMeals.innerHTML="";
@@ -382,6 +388,13 @@ save();
 renderWeightList();
 drawWeightChart();
 }
+function changeDate(){
+currentDate = document.getElementById("selectedDate").value;
+updateDisplay();
+drawCharts();
+}
+
+document.getElementById("selectedDate").value = currentDate;
 
 function renderWeightList(){
 weightList.innerHTML="";
