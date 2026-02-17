@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hina & Hime 飲食日記</title>
+
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial;
+    background: #ffe6f2;
+    padding: 18px;
+    font-size: 18px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 22px;
+    margin-bottom: 20px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+}
+
+h2 {
+    text-align: center;
+    color: #ff4da6;
+    font-size: 26px;
+}
+
+h3 {
+    font-size: 20px;
+    margin-bottom: 12px;
+}
+
+button {
+    background: #ff80bf;
+    border: none;
+    padding: 15px;
+    border-radius: 16px;
+    color: white;
+    font-size: 18px;
+    width: 100%;
+    margin-top: 12px;
+}
+
+input, select {
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    border-radius: 14px;
+    border: 1px solid #ddd;
+    font-size: 18px;
+}
+
+.progress {
+    background: #ffd6eb;
+    border-radius: 20px;
+    height: 20px;
+    margin-top: 6px;
+}
+
+.bar {
+    background: #ff4da6;
+    height: 100%;
+    border-radius: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🌸 Hina & Hime 飲食日記</h2>
+
+<div class="card">
+<h3>📦 產品管理</h3>
+<input id="pname" placeholder="產品名稱">
+<input id="cal" type="number" placeholder="每100g熱量">
+<input id="water" type="number" placeholder="水分%">
+<select id="ptype">
+<option value="wet">濕食</option>
+<option value="dry">乾食</option>
+</select>
+<button onclick="addProduct()">新增產品</button>
+</div>
+
+<!-- Hina 區塊 -->
+<div class="card">
+<h3>🐱 Hina 今日餵食</h3>
+<input type="date" id="hinaDate">
+<select id="hinaProduct"></select>
+<input id="hinaGrams" type="number" placeholder="餵食克數">
+<button onclick="addMeal('hina')">新增 Hina 餵食</button>
+
+<div id="hinaStats"></div>
+</div>
+
+<!-- Hime 區塊 -->
+<div class="card">
+<h3>🐱 Hime 今日餵食</h3>
+<input type="date" id="himeDate">
+<select id="himeProduct"></select>
+<input id="himeGrams" type="number" placeholder="餵食克數">
+<button onclick="addMeal('hime')">新增 Hime 餵食</button>
+
+<div id="himeStats"></div>
+</div>
+
+<script>
+let products = JSON.parse(localStorage.getItem("products")) || [];
+let meals = JSON.parse(localStorage.getItem("meals")) || [];
+
+const goals = { hina:220, hime:160 };
+
+hinaDate.valueAsDate = new Date();
+himeDate.valueAsDate = new Date();
+
+function save(){
+localStorage.setItem("products", JSON.stringify(products));
+localStorage.setItem("meals", JSON.stringify(meals));
+}
+
+function addProduct(){
+if(!pname.value) return alert("請填產品名稱");
+products.push({
+name:pname.value,
+cal:Number(cal.value),
+water:Number(water.value),
+type:ptype.value
+});
+save();
+updateProductLists();
+pname.value="";cal.value="";water.value="";
+}
+
+function updateProductLists(){
+hinaProduct.innerHTML="";
+himeProduct.innerHTML="";
+products.forEach((p,i)=>{
+let opt1=document.createElement("option");
+opt1.value=i;
+opt1.text=p.name;
+hinaProduct.appendChild(opt1);
+
+let opt2=document.createElement("option");
+opt2.value=i;
+opt2.text=p.name;
+himeProduct.appendChild(opt2);
+});
+}
+
+function addMeal(cat){
+let productSelect = cat==="hina" ? hinaProduct : himeProduct;
+let gramsInput = cat==="hina" ? hinaGrams : himeGrams;
+let dateInput = cat==="hina" ? hinaDate : himeDate;
+
+let p = products[productSelect.value];
+if(!p) return alert("請先新增產品");
+let g = Number(gramsInput.value);
+if(!g) return alert("請輸入克數");
+
+meals.push({
+date:dateInput.value,
+cat:cat,
+cal:g/100*p.cal,
+water:p.type==="wet"?g*(p.water/100):0
+});
+save();
+updateStats();
+gramsInput.value="";
+}
+
+function updateStats(){
+let hinaCal=0,hinaWater=0;
+let himeCal=0,himeWater=0;
+
+let todayHina = meals.filter(m=>m.cat==="hina" && m.date===hinaDate.value);
+let todayHime = meals.filter(m=>m.cat==="hime" && m.date===himeDate.value);
+
+todayHina.forEach(m=>{hinaCal+=m.cal;hinaWater+=m.water;});
+todayHime.forEach(m=>{himeCal+=m.cal;himeWater+=m.water;});
+
+hinaStats.innerHTML=`
+🔥 ${Math.round(hinaCal)} / ${goals.hina} kcal
+<div class="progress"><div class="bar" style="width:${Math.min(hinaCal/goals.hina*100,100)}%"></div></div>
+💧 ${Math.round(hinaWater)} ml
+`;
+
+himeStats.innerHTML=`
+🔥 ${Math.round(himeCal)} / ${goals.hime} kcal
+<div class="progress"><div class="bar" style="width:${Math.min(himeCal/goals.hime*100,100)}%"></div></div>
+💧 ${Math.round(himeWater)} ml
+`;
+}
+
+updateProductLists();
+updateStats();
+</script>
+
+</body>
+</html>
