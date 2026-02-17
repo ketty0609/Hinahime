@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hina & Hime 飲食日記</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial;
+    background:linear-gradient(180deg,#ffd6eb,#ffeef7);
+    display:flex;
+    justify-content:center;
+}
+
+.wrapper{
+    width:100%;
+    max-width:480px;
+    padding:20px;
+}
+
+h2{
+    text-align:center;
+    color:#ff4da6;
+}
+
+.card{
+    background:white;
+    padding:18px;
+    border-radius:20px;
+    margin-bottom:20px;
+    box-shadow:0 6px 18px rgba(0,0,0,0.08);
+}
+
+input,select{
+    width:100%;
+    padding:12px;
+    margin-top:8px;
+    border-radius:12px;
+    border:1px solid #ddd;
+    font-size:16px;
+}
+
+button{
+    width:100%;
+    margin-top:12px;
+    padding:14px;
+    border:none;
+    border-radius:14px;
+    background:#ff80bf;
+    color:white;
+    font-size:16px;
+}
+
+.product-item{
+    display:flex;
+    justify-content:space-between;
+    margin-top:8px;
+}
+
+.cat-header{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.avatar{
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    object-fit:cover;
+    border:3px solid #ff80bf;
+}
+
+.progress{
+    background:#ffd6eb;
+    height:18px;
+    border-radius:20px;
+    margin-top:6px;
+}
+
+.bar{
+    height:100%;
+    background:#ff4da6;
+    border-radius:20px;
+}
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+
+<h2>🌸 Hina & Hime 飲食日記</h2>
+
+<div class="card">
+<h3>📦 產品管理</h3>
+<input id="pname" placeholder="產品名稱">
+<input id="cal" type="number" placeholder="每100g熱量">
+<input id="water" type="number" placeholder="水分%">
+<select id="ptype">
+<option value="wet">濕食</option>
+<option value="dry">乾食</option>
+</select>
+<button onclick="addProduct()">新增產品</button>
+<div id="productDisplay"></div>
+</div>
+
+<div class="card">
+<div class="cat-header">
+<img src="IMG_0493.jpeg" class="avatar">
+<h3>Hina</h3>
+</div>
+<input type="date" id="hinaDate">
+<select id="hinaProduct"></select>
+<input id="hinaGrams" type="number" placeholder="餵食克數">
+<button onclick="addMeal('hina')">新增餵食</button>
+<div id="hinaStats"></div>
+</div>
+
+<div class="card">
+<div class="cat-header">
+<img src="IMG_0492.jpeg" class="avatar">
+<h3>Hime</h3>
+</div>
+<input type="date" id="himeDate">
+<select id="himeProduct"></select>
+<input id="himeGrams" type="number" placeholder="餵食克數">
+<button onclick="addMeal('hime')">新增餵食</button>
+<div id="himeStats"></div>
+</div>
+
+<div class="card">
+<h3>📊 近7日熱量變化</h3>
+<canvas id="weeklyChart"></canvas>
+</div>
+
+</div>
+
+<script>
+let products=JSON.parse(localStorage.getItem("products"))||[];
+let meals=JSON.parse(localStorage.getItem("meals"))||[];
+
+const goals={hina:220,hime:160};
+
+hinaDate.valueAsDate=new Date();
+himeDate.valueAsDate=new Date();
+
+function save(){
+localStorage.setItem("products",JSON.stringify(products));
+localStorage.setItem("meals",JSON.stringify(meals));
+}
+
+function addProduct(){
+products.push({name:pname.value,cal:Number(cal.value),water:Number(water.value),type:ptype.value});
+save();
+updateProducts();
+}
+
+function deleteProduct(i){
+products.splice(i,1);
+save();
+updateProducts();
+}
+
+function updateProducts(){
+hinaProduct.innerHTML="";
+himeProduct.innerHTML="";
+productDisplay.innerHTML="";
+products.forEach((p,i)=>{
+let opt=document.createElement("option");
+opt.value=i;
+opt.text=p.name;
+hinaProduct.appendChild(opt);
+himeProduct.appendChild(opt.cloneNode(true));
+
+let div=document.createElement("div");
+div.className="product-item";
+div.innerHTML=`${p.name}<button onclick="deleteProduct(${i})">刪除</button>`;
+productDisplay.appendChild(div);
+});
+}
+
+function addMeal(cat){
+let date=cat==="hina"?hinaDate.value:himeDate.value;
+let grams=cat==="hina"?Number(hinaGrams.value):Number(himeGrams.value);
+let product=products[cat==="hina"?hinaProduct.value:himeProduct.value];
+if(!product||!grams)return;
+
+meals.push({
+date:date,
+cat:cat,
+cal:grams/100*product.cal,
+water:product.type==="wet"?grams*(product.water/100):0
+});
+save();
+updateStats();
+drawChart();
+}
+
+function updateStats(){
+let today=new Date().toISOString().split('T')[0];
+
+let h1=0,h2=0;
+meals.filter(m=>m.date===today).forEach(m=>{
+if(m.cat==="hina")h1+=m.cal;
+else h2+=m.cal;
+});
+
+hinaStats.innerHTML=`
+🔥 ${Math.round(h1)} / ${goals.hina} kcal
+<div class="progress"><div class="bar" style="width:${Math.min(h1/goals.hina*100,100)}%"></div></div>
+`;
+
+himeStats.innerHTML=`
+🔥 ${Math.round(h2)} / ${goals.hime} kcal
+<div class="progress"><div class="bar" style="width:${Math.min(h2/goals.hime*100,100)}%"></div></div>
+`;
+}
+
+function drawChart(){
+let labels=[],hinaData=[],himeData=[];
+for(let i=6;i>=0;i--){
+let d=new Date();
+d.setDate(d.getDate()-i);
+let ds=d.toISOString().split('T')[0];
+labels.push(ds.slice(5));
+let h1=0,h2=0;
+meals.filter(m=>m.date===ds).forEach(m=>{
+if(m.cat==="hina")h1+=m.cal;
+else h2+=m.cal;
+});
+hinaData.push(h1);
+himeData.push(h2);
+}
+new Chart(document.getElementById("weeklyChart"),{
+type:"line",
+data:{
+labels:labels,
+datasets:[
+{label:"Hina",data:hinaData,borderColor:"#ff4da6",tension:0.3},
+{label:"Hime",data:himeData,borderColor:"#ff99cc",tension:0.3}
+]
+}
+});
+}
+
+updateProducts();
+updateStats();
+drawChart();
+</script>
+
+</body>
+</html>
