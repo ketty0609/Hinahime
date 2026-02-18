@@ -245,8 +245,8 @@ renderFoodList();
 function addMeal(cat){
 let date=getCurrentDate();
 let index=document.getElementById(cat+"Food").value;
-let grams=Number(document.getElementById(cat+"Grams").value);
-let extra=Number(document.getElementById(cat+"Extra").value)||0;
+let grams=Number(document.getElementById(cat+"Grams").value="");
+let extra=Number(document.getElementById(cat+"Extra").value="")||0;
 if(index===""||!grams)return;
 
 let food=foods[index];
