@@ -198,14 +198,13 @@ container.innerHTML+=`
 }
 
 function updateFoodSelect(cat){
-let type = document.getElementById(cat+"Category").value;
-let select = document.getElementById(cat+"Food");
+let type=document.getElementById(cat+"Category").value;
+let select=document.getElementById(cat+"Food");
 select.innerHTML="";
-
-foods.forEach((f)=>{
+foods.forEach((f,i)=>{
 if(f.type===type){
 let opt=document.createElement("option");
-opt.value=f.id;   // 🔥 存 id
+opt.value=i;
 opt.text=f.name;
 select.appendChild(opt);
 }
@@ -213,16 +212,12 @@ select.appendChild(opt);
 }
 
 function addFood(){
-const newFood = {
-id: Date.now().toString(), // 唯一ID
-name: foodName.value,
-cal: Number(foodCal.value),
-water: Number(foodWater.value),
-type: foodType.value
-};
-
-foods.push(newFood);
-
+foods.push({
+name:foodName.value,
+cal:Number(foodCal.value),
+water:Number(foodWater.value),
+type:foodType.value
+});
 foodName.value="";
 foodCal.value="";
 foodWater.value="";
@@ -230,7 +225,6 @@ foodWater.value="";
 save();
 renderFoodList();
 }
-
 
 function renderFoodList(){
 foodList.innerHTML="";
@@ -250,25 +244,21 @@ renderFoodList();
 }
 
 function addMeal(cat){
+let date=getCurrentDate();
+let index=document.getElementById(cat+"Food").value;
+let grams=Number(document.getElementById(cat+"Grams").value="");
+let extra=Number(document.getElementById(cat+"Extra").value="")||0;
+if(index===""||!grams)return;
 
-let date = getCurrentDate();
-let foodId = document.getElementById(cat+"Food").value;
-let grams = Number(document.getElementById(cat+"Grams").value);
-let extra = Number(document.getElementById(cat+"Extra").value)||0;
+let food=foods[index];
+let cal=grams/100*food.cal;
 
-if(!foodId || !grams) return;
-
-let food = foods.find(f => f.id === foodId);
-if(!food) return;
-
-let cal = grams/100 * food.cal;
-
-let water = 0;
-if(food.type==="wet" || food.type==="dry"){
-water = grams * (food.water/100);
+let water=0;
+if(food.type==="wet"){
+water=grams*(food.water/100);
 }
 if(food.type==="soup"){
-water = grams * (food.water/100) + extra;
+water=grams*(food.water/100)+extra;
 }
 
 if(!records[date]){
@@ -276,15 +266,11 @@ records[date]={hina:[],hime:[]};
 }
 
 records[date][cat].push({
-foodId: food.id,  // 🔥 存ID
-name: food.name,
+name:food.name,
 grams,
 cal,
 water
 });
-
-document.getElementById(cat+"Grams").value="";
-document.getElementById(cat+"Extra").value="";
 
 save();
 updateDisplay();
