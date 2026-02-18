@@ -365,6 +365,15 @@ renderWeightList();
 updateDisplay();
 });
 
+setInterval(()=>{
+  const today = getToday();
+  const picker = document.getElementById("datePicker");
+  if(picker.value !== today){
+    picker.value = today;
+    updateDisplay();
+  }
+}, 60000); // 每分鐘檢查一次
+
 
 </script>
 
