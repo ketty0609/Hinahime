@@ -126,8 +126,10 @@ let records = JSON.parse(localStorage.getItem("records")) || {};
 let weights = JSON.parse(localStorage.getItem("weights")) || [];
 
 function getToday(){
-const d = new Date();
-return d.toISOString().split("T")[0];
+  const now = new Date();
+  const taiwanOffset = 8 * 60; // 台灣 UTC+8
+  const local = new Date(now.getTime() + (taiwanOffset - now.getTimezoneOffset()) * 60000);
+  return local.toISOString().split("T")[0];
 }
 
 function getCurrentDate(){
