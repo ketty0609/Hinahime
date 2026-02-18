@@ -127,10 +127,7 @@ let weights = JSON.parse(localStorage.getItem("weights")) || [];
 
 function getToday(){
 const d = new Date();
-const year = d.getFullYear();
-const month = String(d.getMonth() + 1).padStart(2,'0');
-const day = String(d.getDate()).padStart(2,'0');
-return `${year}-${month}-${day}`;
+return d.toISOString().split("T")[0];
 }
 
 function getCurrentDate(){
@@ -156,12 +153,17 @@ function calculateNeed(w){
 return Math.round(70*Math.pow(w,0.75)*1.2);
 }
 
+function calculateWaterNeed(w){
+return Math.round(w * 50);
+}
+
 function renderCats(){
 const container=document.getElementById("catsContainer");
 container.innerHTML="";
 ["hina","hime"].forEach(cat=>{
 const name=cat==="hina"?"Hina":"Hime";
 const img=cat==="hina"?"IMG_0493.jpeg":"IMG_0492.jpeg";
+
 container.innerHTML+=`
 <div class="card">
 <div class="cat-header">
@@ -183,6 +185,10 @@ container.innerHTML+=`
 
 <div id="${cat}Total"></div>
 <div class="progress-bar"><div id="${cat}Bar"></div></div>
+
+<div id="${cat}WaterTotal"></div>
+<div class="progress-bar"><div id="${cat}WaterBar" style="background:#2196f3"></div></div>
+
 <div id="${cat}Meals"></div>
 </div>
 `;
@@ -193,11 +199,13 @@ function updateFoodSelect(cat){
 let type=document.getElementById(cat+"Category").value;
 let select=document.getElementById(cat+"Food");
 select.innerHTML="";
-foods.filter(f=>f.type===type).forEach((f,i)=>{
+foods.forEach((f,i)=>{
+if(f.type===type){
 let opt=document.createElement("option");
 opt.value=i;
 opt.text=f.name;
 select.appendChild(opt);
+}
 });
 }
 
@@ -208,6 +216,9 @@ cal:Number(foodCal.value),
 water:Number(foodWater.value),
 type:foodType.value
 });
+foodName.value="";
+foodCal.value="";
+foodWater.value="";
 save();
 renderFoodList();
 }
@@ -238,8 +249,14 @@ if(index===""||!grams)return;
 
 let food=foods[index];
 let cal=grams/100*food.cal;
-let water=food.type!=="dry"?grams*(food.water/100):0;
-if(food.type==="soup")water+=extra;
+
+let water=0;
+if(food.type==="wet"){
+water=grams*(food.water/100);
+}
+if(food.type==="soup"){
+water=grams*(food.water/100)+extra;
+}
 
 if(!records[date]){
 records[date]={hina:[],hime:[]};
@@ -262,22 +279,38 @@ let day=records[date]||{hina:[],hime:[]};
 let latest=weights.length?weights[weights.length-1]:{hina:3.5,hime:2.5};
 
 ["hina","hime"].forEach(cat=>{
-let total=0;
+let totalCal=0;
+let totalWater=0;
+
 let list=document.getElementById(cat+"Meals");
 list.innerHTML="";
+
 day[cat].forEach((m,i)=>{
-total+=m.cal;
+totalCal+=m.cal;
+totalWater+=m.water;
+
 list.innerHTML+=`
 <div class="meal-row">
 ${m.name} ${m.grams}g
 <button class="small-btn" onclick="deleteMeal('${cat}',${i})">刪</button>
 </div>`;
 });
-let need=calculateNeed(latest[cat]);
+
+let needCal=calculateNeed(latest[cat]);
+let needWater=calculateWaterNeed(latest[cat]);
+
+// 🔥 熱量
 document.getElementById(cat+"Total").innerHTML=
-`🔥 ${Math.round(total)} / ${need} kcal`;
-let percent=Math.min(100,(total/need)*100);
-document.getElementById(cat+"Bar").style.width=percent+"%";
+`🔥 ${Math.round(totalCal)} / ${needCal} kcal`;
+let percentCal=Math.min(100,(totalCal/needCal)*100);
+document.getElementById(cat+"Bar").style.width=percentCal+"%";
+
+// 💧 水量
+document.getElementById(cat+"WaterTotal").innerHTML=
+`💧 ${Math.round(totalWater)} / ${needWater} ml`;
+let percentWater=Math.min(100,(totalWater/needWater)*100);
+document.getElementById(cat+"WaterBar").style.width=percentWater+"%";
+
 });
 }
 
@@ -326,6 +359,7 @@ updateDisplay();
 });
 
 </script>
+
 </body>
 </html>
 ~
