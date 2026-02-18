@@ -1,9 +1,16 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hina & Hime 飲食日記</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6fa5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-512.png.PNG">
 
 <style>
 *{box-sizing:border-box;}
@@ -12,118 +19,78 @@ margin:0;
 font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial;
 background:linear-gradient(180deg,#ffd6eb,#ffeef7);
 }
-.wrapper{max-width:520px;margin:auto;padding:16px;}
+.wrapper{max-width:520px;margin:0 auto;padding:20px 16px 40px;}
 h2{text-align:center;color:#e91e63;}
-.tabs{display:flex;gap:6px;margin-bottom:12px;}
+.tabs{display:flex;gap:6px;margin-bottom:14px;}
 .tabs button{
 flex:1;padding:8px;border:none;border-radius:12px;
-background:#ffd6eb;color:#d81b60;font-weight:600;
+background:#ffd6eb;color:#d81b60;font-weight:600;font-size:13px;
 }
-.active{background:#ff6fa5 !important;color:white;}
+.active{background:#ff6fa5!important;color:white!important;}
 .card{
-background:white;border-radius:18px;
-padding:14px;margin-bottom:14px;
-box-shadow:0 4px 14px rgba(0,0,0,0.08);
-}
-.avatar{
-width:50px;height:50px;border-radius:50%;
-border:3px solid #ff6fa5;object-fit:cover;
+background:white;border-radius:20px;padding:16px;margin-bottom:16px;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
 }
 .cat-header{display:flex;align-items:center;gap:10px;}
+.avatar{
+width:52px;height:52px;border-radius:50%;
+border:3px solid #ff6fa5;object-fit:cover;
+}
 input,select{
-width:100%;padding:8px;margin-top:6px;
-border-radius:10px;border:1px solid #ddd;
+width:100%;padding:10px;margin-top:6px;
+border-radius:12px;border:1px solid #ddd;font-size:14px;
 }
 button.action{
-width:100%;padding:8px;margin-top:8px;
-background:#ff6fa5;color:white;border:none;
-border-radius:10px;font-weight:600;
+margin-top:10px;width:100%;padding:10px;
+border:none;border-radius:12px;
+background:#ff6fa5;color:white;font-weight:600;
 }
 .small-btn{
-background:#e53935;color:white;
-border:none;border-radius:6px;
-padding:3px 6px;font-size:12px;
+padding:4px 8px;background:#e53935;border:none;
+border-radius:8px;font-size:12px;color:white;
 }
-.meal-row{
-display:flex;justify-content:space-between;
-margin-top:6px;font-size:13px;
+.progress-bar{
+width:100%;height:12px;background:#f3c6da;
+border-radius:10px;margin-top:6px;overflow:hidden;
 }
-.progress{
-background:#f3c6da;height:10px;
-border-radius:10px;margin-top:6px;
-overflow:hidden;
-}
-.progress div{
-height:100%;background:#e91e63;width:0%;
+.progress-bar div{
+height:100%;width:0%;background:#e91e63;
+transition:0.3s;
 }
 .tab-content{display:none;}
-.date-display{
-text-align:center;font-weight:600;margin-bottom:8px;
+.meal-row{
+display:flex;justify-content:space-between;
+font-size:13px;margin-top:6px;
 }
 </style>
 </head>
+
 <body>
 <div class="wrapper">
 <h2>🌸 Hina & Hime 飲食日記</h2>
 
 <div class="tabs">
-<button id="tab-home" onclick="showTab('home')">今日</button>
-<button id="tab-food" onclick="showTab('food')">食物</button>
-<button id="tab-weight" onclick="showTab('weight')">體重</button>
+<button onclick="showTab('home')" id="tab-home">今日</button>
+<button onclick="showTab('foods')" id="tab-foods">食物庫</button>
+<button onclick="showTab('weight')" id="tab-weight">體重</button>
 </div>
 
-<!-- 今日 -->
 <div id="home" class="tab-content">
 
 <div class="card">
-<div class="date-display" id="dateDisplay"></div>
-<button class="action" onclick="changeDate(-1)">◀ 前一天</button>
-<button class="action" onclick="changeDate(1)">後一天 ▶</button>
-<input type="date" id="datePicker" style="display:none;">
+<input type="date" id="datePicker">
 </div>
 
-<div class="card">
-<div class="cat-header">
-<img src="IMG_0493.jpeg" class="avatar"><h3>Hina</h3>
-</div>
-<select id="hinaCategory" onchange="updateFoodOptions('hina')">
-<option value="wet">濕食</option>
-<option value="dry">乾食</option>
-<option value="soup">湯罐</option>
-</select>
-<select id="hinaFood"></select>
-<input type="number" id="hinaGram" placeholder="克數">
-<button class="action" onclick="addRecord('hina')">新增</button>
-<div id="hinaTotal"></div>
-<div class="progress"><div id="hinaBar"></div></div>
-<div id="hinaRecords"></div>
-</div>
-
-<div class="card">
-<div class="cat-header">
-<img src="IMG_0492.jpeg" class="avatar"><h3>Hime</h3>
-</div>
-<select id="himeCategory" onchange="updateFoodOptions('hime')">
-<option value="wet">濕食</option>
-<option value="dry">乾食</option>
-<option value="soup">湯罐</option>
-</select>
-<select id="himeFood"></select>
-<input type="number" id="himeGram" placeholder="克數">
-<button class="action" onclick="addRecord('hime')">新增</button>
-<div id="himeTotal"></div>
-<div class="progress"><div id="himeBar"></div></div>
-<div id="himeRecords"></div>
-</div>
+<div id="catsContainer"></div>
 
 </div>
 
-<!-- 食物 -->
-<div id="food" class="tab-content">
+<div id="foods" class="tab-content">
 <div class="card">
 <h3>新增食物</h3>
 <input id="foodName" placeholder="名稱">
 <input id="foodCal" type="number" placeholder="每100g熱量">
+<input id="foodWater" type="number" placeholder="水分%">
 <select id="foodType">
 <option value="wet">濕食</option>
 <option value="dry">乾食</option>
@@ -137,14 +104,15 @@ text-align:center;font-weight:600;margin-bottom:8px;
 </div>
 </div>
 
-<!-- 體重 -->
 <div id="weight" class="tab-content">
 <div class="card">
+<h3>新增體重</h3>
 <input id="hinaWeight" type="number" step="0.1" placeholder="Hina kg">
 <input id="himeWeight" type="number" step="0.1" placeholder="Hime kg">
-<button class="action" onclick="saveWeight()">儲存體重</button>
+<button class="action" onclick="addWeight()">儲存</button>
 </div>
 <div class="card">
+<h3>紀錄</h3>
 <div id="weightList"></div>
 </div>
 </div>
@@ -152,9 +120,24 @@ text-align:center;font-weight:600;margin-bottom:8px;
 </div>
 
 <script>
-let foods=JSON.parse(localStorage.getItem("foods"))||[];
-let records=JSON.parse(localStorage.getItem("records"))||[];
-let weights=JSON.parse(localStorage.getItem("weights"))||[];
+
+let foods = JSON.parse(localStorage.getItem("foods")) || [];
+let records = JSON.parse(localStorage.getItem("records")) || {};
+let weights = JSON.parse(localStorage.getItem("weights")) || [];
+
+function getToday(){
+return new Date().toISOString().split('T')[0];
+const d = new Date();
+const year = d.getFullYear();
+const month = String(d.getMonth() + 1).padStart(2,'0');
+const day = String(d.getDate()).padStart(2,'0');
+return `${year}-${month}-${day}`;
+}
+
+function getCurrentDate(){
+const picker=document.getElementById("datePicker");
+return picker.value || getToday();
+}
 
 function save(){
 localStorage.setItem("foods",JSON.stringify(foods));
@@ -163,51 +146,71 @@ localStorage.setItem("weights",JSON.stringify(weights));
 }
 
 function showTab(tab){
-document.querySelectorAll(".tab-content").forEach(t=>t.style.display="none");
-document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
-document.getElementById(tab).style.display="block";
+document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
+document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove("active"));
+document.getElementById(tab).style.display='block';
 document.getElementById("tab-"+tab).classList.add("active");
 }
 showTab("home");
 
-function getToday(){
-const d=new Date();
-return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function calculateNeed(w){
+return Math.round(70*Math.pow(w,0.75)*1.2);
 }
 
-function formatMinguo(dateStr){
-const d=new Date(dateStr);
-const y=d.getFullYear()-1911;
-const m=String(d.getMonth()+1).padStart(2,'0');
-const day=String(d.getDate()).padStart(2,'0');
-return `${y}年${m}月${day}日`;
+function renderCats(){
+const container=document.getElementById("catsContainer");
+container.innerHTML="";
+["hina","hime"].forEach(cat=>{
+const name=cat==="hina"?"Hina":"Hime";
+const img=cat==="hina"?"IMG_0493.jpeg":"IMG_0492.jpeg";
+container.innerHTML+=`
+<div class="card">
+<div class="cat-header">
+<img src="${img}" class="avatar">
+<h3>${name}</h3>
+</div>
+
+<select id="${cat}Category" onchange="updateFoodSelect('${cat}')">
+<option value="">選擇分類</option>
+<option value="wet">濕食</option>
+<option value="dry">乾食</option>
+<option value="soup">湯罐</option>
+</select>
+
+<select id="${cat}Food"></select>
+<input type="number" id="${cat}Grams" placeholder="克數">
+<input type="number" id="${cat}Extra" placeholder="額外加水 ml">
+<button class="action" onclick="addMeal('${cat}')">新增餵食</button>
+
+<div id="${cat}Total"></div>
+<div class="progress-bar"><div id="${cat}Bar"></div></div>
+<div id="${cat}Meals"></div>
+</div>
+`;
+});
 }
 
-datePicker.value=getToday();
-updateDateDisplay();
-
-function updateDateDisplay(){
-dateDisplay.innerText=formatMinguo(datePicker.value);
-}
-
-function changeDate(offset){
-let d=new Date(datePicker.value);
-d.setDate(d.getDate()+offset);
-datePicker.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-updateDateDisplay();
-renderRecords();
+function updateFoodSelect(cat){
+let type=document.getElementById(cat+"Category").value;
+let select=document.getElementById(cat+"Food");
+select.innerHTML="";
+foods.filter(f=>f.type===type).forEach((f,i)=>{
+let opt=document.createElement("option");
+opt.value=i;
+opt.text=f.name;
+select.appendChild(opt);
+});
 }
 
 function addFood(){
 foods.push({
 name:foodName.value,
 cal:Number(foodCal.value),
+water:Number(foodWater.value),
 type:foodType.value
 });
 save();
 renderFoodList();
-updateFoodOptions("hina");
-updateFoodOptions("hime");
 }
 
 function renderFoodList(){
@@ -215,7 +218,7 @@ foodList.innerHTML="";
 foods.forEach((f,i)=>{
 foodList.innerHTML+=`
 <div class="meal-row">
-${f.name} 🔥${f.cal}
+${f.name} (${f.type})
 <button class="small-btn" onclick="deleteFood(${i})">刪</button>
 </div>`;
 });
@@ -225,78 +228,76 @@ function deleteFood(i){
 foods.splice(i,1);
 save();
 renderFoodList();
-updateFoodOptions("hina");
-updateFoodOptions("hime");
 }
 
-function updateFoodOptions(cat){
-let category=document.getElementById(cat+"Category").value;
-let select=document.getElementById(cat+"Food");
-select.innerHTML="";
-foods.forEach((f,i)=>{
-if(f.type===category){
-select.innerHTML+=`<option value="${i}">${f.name}</option>`;
+function addMeal(cat){
+let date=getCurrentDate();
+let index=document.getElementById(cat+"Food").value;
+let grams=Number(document.getElementById(cat+"Grams").value);
+let extra=Number(document.getElementById(cat+"Extra").value)||0;
+if(index===""||!grams)return;
+
+let food=foods[index];
+let cal=grams/100*food.cal;
+let water=food.type!=="dry"?grams*(food.water/100):0;
+if(food.type==="soup")water+=extra;
+
+if(!records[date]){
+records[date]={hina:[],hime:[]};
 }
+
+records[date][cat].push({
+name:food.name,
+grams,
+cal,
+water
 });
-}
 
-function calculateNeed(w){
-return Math.round(70*Math.pow(w,0.75)*1.2);
-}
-
-function addRecord(cat){
-let gram=Number(document.getElementById(cat+"Gram").value);
-let foodIndex=document.getElementById(cat+"Food").value;
-if(!gram)return;
-let food=foods[foodIndex];
-let cal=gram/100*food.cal;
-records.push({date:datePicker.value,cat,cal});
 save();
-renderRecords();
+updateDisplay();
 }
 
-function renderRecords(){
-let date=datePicker.value;
-let h1=0,h2=0;
-hinaRecords.innerHTML="";
-himeRecords.innerHTML="";
-records.forEach((r,i)=>{
-if(r.date===date){
-if(r.cat==="hina"){
-h1+=r.cal;
-hinaRecords.innerHTML+=`<div class="meal-row">🔥${Math.round(r.cal)}
-<button class="small-btn" onclick="deleteRecord(${i})">刪</button></div>`;
-}else{
-h2+=r.cal;
-himeRecords.innerHTML+=`<div class="meal-row">🔥${Math.round(r.cal)}
-<button class="small-btn" onclick="deleteRecord(${i})">刪</button></div>`;
-}
-}
-});
+function updateDisplay(){
+let date=getCurrentDate();
+let day=records[date]||{hina:[],hime:[]};
 let latest=weights.length?weights[weights.length-1]:{hina:3.5,hime:2.5};
-let needH1=calculateNeed(latest.hina);
-let needH2=calculateNeed(latest.hime);
-hinaTotal.innerHTML=`${Math.round(h1)} / ${needH1} kcal`;
-himeTotal.innerHTML=`${Math.round(h2)} / ${needH2} kcal`;
-hinaBar.style.width=Math.min(100,h1/needH1*100)+"%";
-himeBar.style.width=Math.min(100,h2/needH2*100)+"%";
+
+["hina","hime"].forEach(cat=>{
+let total=0;
+let list=document.getElementById(cat+"Meals");
+list.innerHTML="";
+day[cat].forEach((m,i)=>{
+total+=m.cal;
+list.innerHTML+=`
+<div class="meal-row">
+${m.name} ${m.grams}g
+<button class="small-btn" onclick="deleteMeal('${cat}',${i})">刪</button>
+</div>`;
+});
+let need=calculateNeed(latest[cat]);
+document.getElementById(cat+"Total").innerHTML=
+`🔥 ${Math.round(total)} / ${need} kcal`;
+let percent=Math.min(100,(total/need)*100);
+document.getElementById(cat+"Bar").style.width=percent+"%";
+});
 }
 
-function deleteRecord(i){
-records.splice(i,1);
+function deleteMeal(cat,i){
+let date=getCurrentDate();
+records[date][cat].splice(i,1);
 save();
-renderRecords();
+updateDisplay();
 }
 
-function saveWeight(){
+function addWeight(){
 weights.push({
-date:getToday(),
+date:getCurrentDate(),
 hina:Number(hinaWeight.value),
 hime:Number(himeWeight.value)
 });
 save();
 renderWeightList();
-renderRecords();
+updateDisplay();
 }
 
 function renderWeightList(){
@@ -304,7 +305,7 @@ weightList.innerHTML="";
 weights.slice().reverse().forEach((w,i)=>{
 weightList.innerHTML+=`
 <div class="meal-row">
-${formatMinguo(w.date)} H:${w.hina} Hm:${w.hime}
+${w.date} H:${w.hina}kg M:${w.hime}kg
 <button class="small-btn" onclick="deleteWeight(${weights.length-1-i})">刪</button>
 </div>`;
 });
@@ -314,14 +315,18 @@ function deleteWeight(i){
 weights.splice(i,1);
 save();
 renderWeightList();
-renderRecords();
+updateDisplay();
 }
 
+document.addEventListener("DOMContentLoaded",()=>{
+document.getElementById("datePicker").value=getToday();
+renderCats();
 renderFoodList();
-updateFoodOptions("hina");
-updateFoodOptions("hime");
-renderRecords();
 renderWeightList();
+updateDisplay();
+});
+
 </script>
 </body>
 </html>
+~
