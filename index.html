@@ -353,12 +353,18 @@ updateDisplay();
 }
 
 document.addEventListener("DOMContentLoaded",()=>{
-document.getElementById("datePicker").value=getToday();
+
+document.getElementById("datePicker").value = getToday();
+
+document.getElementById("datePicker")
+.addEventListener("change", updateDisplay);
+
 renderCats();
 renderFoodList();
 renderWeightList();
 updateDisplay();
 });
+
 
 </script>
 
