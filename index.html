@@ -121,16 +121,6 @@ font-size:13px;margin-top:6px;
 
 <script>
 
-const foodName   = document.getElementById('foodName');
-const foodCal    = document.getElementById('foodCal');
-const foodWater  = document.getElementById('foodWater');
-const foodType   = document.getElementById('foodType');
-const foodList   = document.getElementById('foodList');
-
-const hinaWeight = document.getElementById('hinaWeight');
-const himeWeight = document.getElementById('himeWeight');
-const weightList = document.getElementById('weightList');
-
 let foods = JSON.parse(localStorage.getItem("foods")) || [];
 let records = JSON.parse(localStorage.getItem("records")) || {};
 let weights = JSON.parse(localStorage.getItem("weights")) || [];
@@ -172,7 +162,7 @@ const container=document.getElementById("catsContainer");
 container.innerHTML="";
 ["hina","hime"].forEach(cat=>{
 const name=cat==="hina"?"Hina":"Hime";
-const img=cat==="hina"?"https://via.placeholder.com/52/ff9aa2/ffffff?text=H":"https://via.placeholder.com/52/c7ceea/ffffff?text=M";
+const img=cat==="hina"?"IMG_0493.jpeg":"IMG_0492.jpeg";
 
 container.innerHTML+=`
 <div class="card">
@@ -372,3 +362,4 @@ updateDisplay();
 
 </body>
 </html>
+~
