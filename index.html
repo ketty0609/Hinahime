@@ -5,32 +5,121 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hina & Hime 飲食日記</title>
 
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ff6fa5">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<link rel="apple-touch-icon" href="icon-512.png.PNG">
-
 <style>
-body{margin:0;font-family:-apple-system;background:linear-gradient(180deg,#ffd6eb,#ffeef7);}
+*{box-sizing:border-box;}
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial;
+background:linear-gradient(180deg,#ffd6eb,#ffeef7);
+}
 .wrapper{max-width:520px;margin:auto;padding:16px;}
 h2{text-align:center;color:#e91e63;}
-.card{background:white;padding:16px;border-radius:18px;margin-bottom:14px;}
-button{background:#ff6fa5;color:white;border:none;padding:8px;border-radius:10px;width:100%;margin-top:6px;}
-input,select{width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px solid #ddd;}
-.progress{background:#f3c6da;height:10px;border-radius:10px;margin-top:6px;overflow:hidden;}
-.progress div{height:100%;background:#e91e63;width:0%;}
-.small{background:#e53935;padding:3px 6px;border-radius:6px;font-size:12px;}
+.tabs{display:flex;gap:6px;margin-bottom:12px;}
+.tabs button{
+flex:1;padding:8px;border:none;border-radius:12px;
+background:#ffd6eb;color:#d81b60;font-weight:600;
+}
+.active{background:#ff6fa5 !important;color:white;}
+.card{
+background:white;border-radius:18px;
+padding:14px;margin-bottom:14px;
+box-shadow:0 4px 14px rgba(0,0,0,0.08);
+}
+.avatar{
+width:50px;height:50px;border-radius:50%;
+border:3px solid #ff6fa5;object-fit:cover;
+}
+.cat-header{display:flex;align-items:center;gap:10px;}
+input,select{
+width:100%;padding:8px;margin-top:6px;
+border-radius:10px;border:1px solid #ddd;
+}
+button.action{
+width:100%;padding:8px;margin-top:8px;
+background:#ff6fa5;color:white;border:none;
+border-radius:10px;font-weight:600;
+}
+.small-btn{
+background:#e53935;color:white;
+border:none;border-radius:6px;
+padding:3px 6px;font-size:12px;
+}
+.meal-row{
+display:flex;justify-content:space-between;
+margin-top:6px;font-size:13px;
+}
+.progress{
+background:#f3c6da;height:10px;
+border-radius:10px;margin-top:6px;
+overflow:hidden;
+}
+.progress div{
+height:100%;background:#e91e63;width:0%;
+}
+.tab-content{display:none;}
+.date-display{
+text-align:center;font-weight:600;margin-bottom:8px;
+}
 </style>
 </head>
 <body>
 <div class="wrapper">
-<h2>🌸 Hina & Hime 雲端日記</h2>
+<h2>🌸 Hina & Hime 飲食日記</h2>
 
-<div class="card">
-<label>選擇日期</label>
-<input type="date" id="datePicker">
+<div class="tabs">
+<button id="tab-home" onclick="showTab('home')">今日</button>
+<button id="tab-food" onclick="showTab('food')">食物</button>
+<button id="tab-weight" onclick="showTab('weight')">體重</button>
 </div>
 
+<!-- 今日 -->
+<div id="home" class="tab-content">
+
+<div class="card">
+<div class="date-display" id="dateDisplay"></div>
+<button class="action" onclick="changeDate(-1)">◀ 前一天</button>
+<button class="action" onclick="changeDate(1)">後一天 ▶</button>
+<input type="date" id="datePicker" style="display:none;">
+</div>
+
+<div class="card">
+<div class="cat-header">
+<img src="IMG_0493.jpeg" class="avatar"><h3>Hina</h3>
+</div>
+<select id="hinaCategory" onchange="updateFoodOptions('hina')">
+<option value="wet">濕食</option>
+<option value="dry">乾食</option>
+<option value="soup">湯罐</option>
+</select>
+<select id="hinaFood"></select>
+<input type="number" id="hinaGram" placeholder="克數">
+<button class="action" onclick="addRecord('hina')">新增</button>
+<div id="hinaTotal"></div>
+<div class="progress"><div id="hinaBar"></div></div>
+<div id="hinaRecords"></div>
+</div>
+
+<div class="card">
+<div class="cat-header">
+<img src="IMG_0492.jpeg" class="avatar"><h3>Hime</h3>
+</div>
+<select id="himeCategory" onchange="updateFoodOptions('hime')">
+<option value="wet">濕食</option>
+<option value="dry">乾食</option>
+<option value="soup">湯罐</option>
+</select>
+<select id="himeFood"></select>
+<input type="number" id="himeGram" placeholder="克數">
+<button class="action" onclick="addRecord('hime')">新增</button>
+<div id="himeTotal"></div>
+<div class="progress"><div id="himeBar"></div></div>
+<div id="himeRecords"></div>
+</div>
+
+</div>
+
+<!-- 食物 -->
+<div id="food" class="tab-content">
 <div class="card">
 <h3>新增食物</h3>
 <input id="foodName" placeholder="名稱">
@@ -40,138 +129,199 @@ input,select{width:100%;padding:8px;margin-top:6px;border-radius:8px;border:1px 
 <option value="dry">乾食</option>
 <option value="soup">湯罐</option>
 </select>
-<button onclick="addFood()">新增</button>
+<button class="action" onclick="addFood()">新增</button>
 </div>
-
 <div class="card">
 <h3>食物列表</h3>
 <div id="foodList"></div>
 </div>
+</div>
 
+<!-- 體重 -->
+<div id="weight" class="tab-content">
 <div class="card">
-<h3>Hina</h3>
-<select id="hinaFood"></select>
-<input id="hinaGram" type="number" placeholder="克數">
-<button onclick="addRecord('hina')">新增</button>
-<div id="hinaTotal"></div>
-<div class="progress"><div id="hinaBar"></div></div>
-<div id="hinaRecords"></div>
+<input id="hinaWeight" type="number" step="0.1" placeholder="Hina kg">
+<input id="himeWeight" type="number" step="0.1" placeholder="Hime kg">
+<button class="action" onclick="saveWeight()">儲存體重</button>
 </div>
-
 <div class="card">
-<h3>Hime</h3>
-<select id="himeFood"></select>
-<input id="himeGram" type="number" placeholder="克數">
-<button onclick="addRecord('hime')">新增</button>
-<div id="himeTotal"></div>
-<div class="progress"><div id="himeBar"></div></div>
-<div id="himeRecords"></div>
+<div id="weightList"></div>
+</div>
 </div>
 
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-firestore.js";
+<script>
+let foods=JSON.parse(localStorage.getItem("foods"))||[];
+let records=JSON.parse(localStorage.getItem("records"))||[];
+let weights=JSON.parse(localStorage.getItem("weights"))||[];
 
-const firebaseConfig = {
-apiKey: "AIzaSyCcC7_sycTUNTIhRhPrFpkHoat2JZ_lmoI",
-authDomain: "hinahime-df1a0.firebaseapp.com",
-projectId: "hinahime-df1a0",
-storageBucket: "hinahime-df1a0.firebasestorage.app",
-messagingSenderId: "705041671463",
-appId: "1:705041671463:web:67ce9ce2346dfc3cddb502"
-};
+function save(){
+localStorage.setItem("foods",JSON.stringify(foods));
+localStorage.setItem("records",JSON.stringify(records));
+localStorage.setItem("weights",JSON.stringify(weights));
+}
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-let currentDate;
+function showTab(tab){
+document.querySelectorAll(".tab-content").forEach(t=>t.style.display="none");
+document.querySelectorAll(".tabs button").forEach(b=>b.classList.remove("active"));
+document.getElementById(tab).style.display="block";
+document.getElementById("tab-"+tab).classList.add("active");
+}
+showTab("home");
 
 function getToday(){
 const d=new Date();
 return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-document.addEventListener("DOMContentLoaded",()=>{
-currentDate=getToday();
-datePicker.value=currentDate;
-loadFoods();
-loadRecords();
-});
+function formatMinguo(dateStr){
+const d=new Date(dateStr);
+const y=d.getFullYear()-1911;
+const m=String(d.getMonth()+1).padStart(2,'0');
+const day=String(d.getDate()).padStart(2,'0');
+return `${y}年${m}月${day}日`;
+}
 
-datePicker.addEventListener("change",()=>{
-currentDate=datePicker.value;
-loadRecords();
-});
+datePicker.value=getToday();
+updateDateDisplay();
 
-async function addFood(){
-await addDoc(collection(db,"foods"),{
+function updateDateDisplay(){
+dateDisplay.innerText=formatMinguo(datePicker.value);
+}
+
+function changeDate(offset){
+let d=new Date(datePicker.value);
+d.setDate(d.getDate()+offset);
+datePicker.value=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+updateDateDisplay();
+renderRecords();
+}
+
+function addFood(){
+foods.push({
 name:foodName.value,
 cal:Number(foodCal.value),
 type:foodType.value
 });
-foodName.value="";
-foodCal.value="";
-loadFoods();
+save();
+renderFoodList();
+updateFoodOptions("hina");
+updateFoodOptions("hime");
 }
 
-async function loadFoods(){
-const query=await getDocs(collection(db,"foods"));
+function renderFoodList(){
 foodList.innerHTML="";
-hinaFood.innerHTML="";
-himeFood.innerHTML="";
-query.forEach(docu=>{
-const data=docu.data();
-foodList.innerHTML+=`<div>${data.name} 🔥${data.cal}
-<button class="small" onclick="deleteFood('${docu.id}')">刪</button></div>`;
-hinaFood.innerHTML+=`<option value="${docu.id}|${data.cal}">${data.name}</option>`;
-himeFood.innerHTML+=`<option value="${docu.id}|${data.cal}">${data.name}</option>`;
+foods.forEach((f,i)=>{
+foodList.innerHTML+=`
+<div class="meal-row">
+${f.name} 🔥${f.cal}
+<button class="small-btn" onclick="deleteFood(${i})">刪</button>
+</div>`;
 });
 }
 
-window.deleteFood=async(id)=>{
-await deleteDoc(doc(db,"foods",id));
-loadFoods();
-};
+function deleteFood(i){
+foods.splice(i,1);
+save();
+renderFoodList();
+updateFoodOptions("hina");
+updateFoodOptions("hime");
+}
 
-async function addRecord(cat){
-let select=cat==="hina"?hinaFood:himeFood;
-let gram=cat==="hina"?hinaGram.value:himeGram.value;
+function updateFoodOptions(cat){
+let category=document.getElementById(cat+"Category").value;
+let select=document.getElementById(cat+"Food");
+select.innerHTML="";
+foods.forEach((f,i)=>{
+if(f.type===category){
+select.innerHTML+=`<option value="${i}">${f.name}</option>`;
+}
+});
+}
+
+function calculateNeed(w){
+return Math.round(70*Math.pow(w,0.75)*1.2);
+}
+
+function addRecord(cat){
+let gram=Number(document.getElementById(cat+"Gram").value);
+let foodIndex=document.getElementById(cat+"Food").value;
 if(!gram)return;
-let [id,cal]=select.value.split("|");
-await addDoc(collection(db,"records"),{
-date:currentDate,
-cat,
-cal:Number(cal)*(gram/100)
-});
-loadRecords();
+let food=foods[foodIndex];
+let cal=gram/100*food.cal;
+records.push({date:datePicker.value,cat,cal});
+save();
+renderRecords();
 }
 
-async function loadRecords(){
-const query=await getDocs(collection(db,"records"));
+function renderRecords(){
+let date=datePicker.value;
 let h1=0,h2=0;
 hinaRecords.innerHTML="";
 himeRecords.innerHTML="";
-query.forEach(docu=>{
-let d=docu.data();
-if(d.date===currentDate){
-if(d.cat==="hina"){
-h1+=d.cal;
-hinaRecords.innerHTML+=`<div>🔥${Math.round(d.cal)}</div>`;
+records.forEach((r,i)=>{
+if(r.date===date){
+if(r.cat==="hina"){
+h1+=r.cal;
+hinaRecords.innerHTML+=`<div class="meal-row">🔥${Math.round(r.cal)}
+<button class="small-btn" onclick="deleteRecord(${i})">刪</button></div>`;
 }else{
-h2+=d.cal;
-himeRecords.innerHTML+=`<div>🔥${Math.round(d.cal)}</div>`;
+h2+=r.cal;
+himeRecords.innerHTML+=`<div class="meal-row">🔥${Math.round(r.cal)}
+<button class="small-btn" onclick="deleteRecord(${i})">刪</button></div>`;
 }
 }
 });
-hinaTotal.innerHTML=`今日 ${Math.round(h1)} kcal`;
-himeTotal.innerHTML=`今日 ${Math.round(h2)} kcal`;
-hinaBar.style.width=Math.min(100,h1/200*100)+"%";
-himeBar.style.width=Math.min(100,h2/150*100)+"%";
+let latest=weights.length?weights[weights.length-1]:{hina:3.5,hime:2.5};
+let needH1=calculateNeed(latest.hina);
+let needH2=calculateNeed(latest.hime);
+hinaTotal.innerHTML=`${Math.round(h1)} / ${needH1} kcal`;
+himeTotal.innerHTML=`${Math.round(h2)} / ${needH2} kcal`;
+hinaBar.style.width=Math.min(100,h1/needH1*100)+"%";
+himeBar.style.width=Math.min(100,h2/needH2*100)+"%";
 }
+
+function deleteRecord(i){
+records.splice(i,1);
+save();
+renderRecords();
+}
+
+function saveWeight(){
+weights.push({
+date:getToday(),
+hina:Number(hinaWeight.value),
+hime:Number(himeWeight.value)
+});
+save();
+renderWeightList();
+renderRecords();
+}
+
+function renderWeightList(){
+weightList.innerHTML="";
+weights.slice().reverse().forEach((w,i)=>{
+weightList.innerHTML+=`
+<div class="meal-row">
+${formatMinguo(w.date)} H:${w.hina} Hm:${w.hime}
+<button class="small-btn" onclick="deleteWeight(${weights.length-1-i})">刪</button>
+</div>`;
+});
+}
+
+function deleteWeight(i){
+weights.splice(i,1);
+save();
+renderWeightList();
+renderRecords();
+}
+
+renderFoodList();
+updateFoodOptions("hina");
+updateFoodOptions("hime");
+renderRecords();
+renderWeightList();
 </script>
 </body>
 </html>
-
-
