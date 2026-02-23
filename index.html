@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hina & Hime 飲食日記</title>
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6fa5">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-512.png.PNG">
+
+<style>
+*{box-sizing:border-box;}
+body{
+margin:0;
+font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial;
+background:linear-gradient(180deg,#ffd6eb,#ffeef7);
+}
+.wrapper{max-width:520px;margin:0 auto;padding:20px 16px 40px;}
+h2{text-align:center;color:#e91e63;}
+.tabs{display:flex;gap:6px;margin-bottom:14px;}
+.tabs button{
+flex:1;padding:8px;border:none;border-radius:12px;
+background:#ffd6eb;color:#d81b60;font-weight:600;font-size:13px;
+}
+.active{background:#ff6fa5!important;color:white!important;}
+.card{
+background:white;border-radius:20px;padding:16px;margin-bottom:16px;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
+}
+.cat-header{display:flex;align-items:center;gap:10px;}
+.avatar{
+width:52px;height:52px;border-radius:50%;
+border:3px solid #ff6fa5;object-fit:cover;
+}
+input,select{
+width:100%;padding:10px;margin-top:6px;
+border-radius:12px;border:1px solid #ddd;font-size:14px;
+}
+button.action{
+margin-top:10px;width:100%;padding:10px;
+border:none;border-radius:12px;
+background:#ff6fa5;color:white;font-weight:600;
+}
+.small-btn{
+padding:4px 8px;background:#e53935;border:none;
+border-radius:8px;font-size:12px;color:white;
+}
+.progress-bar{
+width:100%;height:12px;background:#f3c6da;
+border-radius:10px;margin-top:6px;overflow:hidden;
+}
+.progress-bar div{
+height:100%;width:0%;background:#e91e63;
+transition:0.3s;
+}
+.tab-content{display:none;}
+.meal-row{
+display:flex;justify-content:space-between;
+font-size:13px;margin-top:6px;
+}
+</style>
+</head>
+
+<body>
+<div class="wrapper">
+<h2>🌸 Hina & Hime 飲食日記</h2>
+
+<div class="tabs">
+<button onclick="showTab('home')" id="tab-home">今日</button>
+<button onclick="showTab('foods')" id="tab-foods">食物庫</button>
+<button onclick="showTab('weight')" id="tab-weight">體重</button>
+</div>
+
+<div id="home" class="tab-content">
+<div class="card">
+<input type="date" id="datePicker">
+</div>
+<div id="catsContainer"></div>
+</div>
+
+<div id="foods" class="tab-content">
+<div class="card">
+<h3>新增食物</h3>
+<input id="foodName" placeholder="名稱">
+<input id="foodCal" type="number" placeholder="每100g熱量">
+<input id="foodWater" type="number" placeholder="水分%">
+<select id="foodType">
+<option value="wet">濕食</option>
+<option value="dry">乾食</option>
+<option value="soup">湯罐</option>
+</select>
+<button class="action" onclick="addFood()">新增</button>
+</div>
+<div class="card">
+<h3>食物列表</h3>
+<div id="foodList"></div>
+</div>
+
+<div class="card" style="border: 2px dashed #ff6fa5; background: #fffcfd;">
+<h3>💾 資料備份與轉移</h3>
+<p style="font-size: 12px; color: #666;">換瀏覽器或手機時，請先下載備份檔，在新裝置匯入即可。</p>
+<button class="action" style="background: #4caf50;" onclick="exportData()">下載備份檔 (.json)</button>
+<div style="margin-top: 15px;">
+    <label style="font-size: 13px; font-weight: bold; color: #d81b60;">匯入舊紀錄：</label>
+    <input type="file" id="importFile" accept=".json" onchange="importData(event)" style="font-size: 12px; border: none; padding: 5px;">
+</div>
+</div>
+</div>
+
+<div id="weight" class="tab-content">
+<div class="card">
+<h3>新增體重</h3>
+<input id="hinaWeight" type="number" step="0.1" placeholder="Hina kg">
+<input id="himeWeight" type="number" step="0.1" placeholder="Hime kg">
+<button class="action" onclick="addWeight()">儲存</button>
+</div>
+<div class="card">
+<h3>紀錄</h3>
+<div id="weightList"></div>
+</div>
+</div>
+
+</div>
+
+<script>
+let foods = JSON.parse(localStorage.getItem("foods")) || [];
+let records = JSON.parse(localStorage.getItem("records")) || {};
+let weights = JSON.parse(localStorage.getItem("weights")) || [];
+
+function getToday(){
+  const now = new Date();
+  const taiwanOffset = 8 * 60; 
+  const local = new Date(now.getTime() + (taiwanOffset - now.getTimezoneOffset()) * 60000);
+  return local.toISOString().split("T")[0];
+}
+
+function getCurrentDate(){
+const picker=document.getElementById("datePicker");
+return picker.value || getToday();
+}
+
+function save(){
+localStorage.setItem("foods",JSON.stringify(foods));
+localStorage.setItem("records",JSON.stringify(records));
+localStorage.setItem("weights",JSON.stringify(weights));
+}
+
+function showTab(tab){
+document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
+document.querySelectorAll('.tabs button').forEach(b=>b.classList.remove("active"));
+document.getElementById(tab).style.display='block';
+document.getElementById("tab-"+tab).classList.add("active");
+}
+showTab("home");
+
+function calculateNeed(w){
+return Math.round(70*Math.pow(w,0.75)*1.2);
+}
+
+function calculateWaterNeed(w){
+return Math.round(w * 50);
+}
+
+function renderCats(){
+const container=document.getElementById("catsContainer");
+container.innerHTML="";
+["hina","hime"].forEach(cat=>{
+const name=cat==="hina"?"Hina":"Hime";
+const img=cat==="hina"?"IMG_0493.jpeg":"IMG_0492.jpeg";
+
+container.innerHTML+=`
+<div class="card">
+<div class="cat-header">
+<img src="${img}" class="avatar">
+<h3>${name}</h3>
+</div>
+
+<select id="${cat}Category" onchange="updateFoodSelect('${cat}')">
+<option value="">選擇分類</option>
+<option value="wet">濕食</option>
+<option value="dry">乾食</option>
+<option value="soup">湯罐</option>
+</select>
+
+<select id="${cat}Food"></select>
+<input type="number" id="${cat}Grams" placeholder="克數">
+<input type="number" id="${cat}Extra" placeholder="額外加水 ml">
+<button class="action" onclick="addMeal('${cat}')">新增餵食</button>
+
+<div id="${cat}Total"></div>
+<div class="progress-bar"><div id="${cat}Bar"></div></div>
+
+<div id="${cat}WaterTotal"></div>
+<div class="progress-bar"><div id="${cat}WaterBar" style="background:#2196f3"></div></div>
+
+<div id="${cat}Meals"></div>
+</div>
+`;
+});
+}
+
+function updateFoodSelect(cat){
+let type=document.getElementById(cat+"Category").value;
+let select=document.getElementById(cat+"Food");
+select.innerHTML="";
+foods.forEach((f,i)=>{
+if(f.type===type){
+let opt=document.createElement("option");
+opt.value=i;
+opt.text=f.name;
+select.appendChild(opt);
+}
+});
+}
+
+function addFood(){
+if(!foodName.value || !foodCal.value) return;
+foods.push({
+name:foodName.value,
+cal:Number(foodCal.value),
+water:Number(foodWater.value),
+type:foodType.value
+});
+foodName.value="";
+foodCal.value="";
+foodWater.value="";
+
+save();
+renderFoodList();
+}
+
+function renderFoodList(){
+foodList.innerHTML="";
+foods.forEach((f,i)=>{
+foodList.innerHTML+=`
+<div class="meal-row">
+${f.name} (${f.type})
+<button class="small-btn" onclick="deleteFood(${i})">刪</button>
+</div>`;
+});
+}
+
+function deleteFood(i){
+foods.splice(i,1);
+save();
+renderFoodList();
+}
+
+// 修正後的 addMeal 邏輯
+function addMeal(cat){
+    let date = getCurrentDate();
+    let index = document.getElementById(cat + "Food").value;
+    let gInput = document.getElementById(cat + "Grams");
+    let eInput = document.getElementById(cat + "Extra");
+    
+    let grams = Number(gInput.value);
+    let extra = Number(eInput.value) || 0;
+
+    if(index === "" || !grams) return;
+
+    let food = foods[index];
+    let cal = (grams / 100) * food.cal;
+    let water = grams * (food.water / 100);
+    if(food.type === "soup"){
+        water += extra;
+    }
+
+    if(!records[date]){
+        records[date] = {hina:[], hime:[]};
+    }
+
+    records[date][cat].push({
+        name: food.name,
+        grams: grams,
+        cal: cal,
+        water: water
+    });
+
+    save();
+    updateDisplay();
+    
+    // 儲存後清空
+    gInput.value = "";
+    eInput.value = "";
+}
+
+function updateDisplay(){
+let date=getCurrentDate();
+let day=records[date]||{hina:[],hime:[]};
+let latest=weights.length?weights[weights.length-1]:{hina:3.5,hime:2.5};
+
+["hina","hime"].forEach(cat=>{
+let totalCal=0;
+let totalWater=0;
+
+let list=document.getElementById(cat+"Meals");
+if(!list) return;
+list.innerHTML="";
+
+day[cat].forEach((m,i)=>{
+totalCal+=m.cal;
+totalWater+=m.water;
+
+list.innerHTML+=`
+<div class="meal-row">
+${m.name} ${m.grams}g
+<button class="small-btn" onclick="deleteMeal('${cat}',${i})">刪</button>
+</div>`;
+});
+
+let needCal=calculateNeed(latest[cat]);
+let needWater=calculateWaterNeed(latest[cat]);
+
+document.getElementById(cat+"Total").innerHTML=
+`🔥 ${Math.round(totalCal)} / ${needCal} kcal`;
+let percentCal=Math.min(100,(totalCal/needCal)*100);
+document.getElementById(cat+"Bar").style.width=percentCal+"%";
+
+document.getElementById(cat+"WaterTotal").innerHTML=
+`💧 ${Math.round(totalWater)} / ${needWater} ml`;
+let percentWater=Math.min(100,(totalWater/needWater)*100);
+document.getElementById(cat+"WaterBar").style.width=percentWater+"%";
+
+});
+}
+
+function deleteMeal(cat,i){
+let date=getCurrentDate();
+records[date][cat].splice(i,1);
+save();
+updateDisplay();
+}
+
+function addWeight(){
+weights.push({
+date:getCurrentDate(),
+hina:Number(hinaWeight.value),
+hime:Number(himeWeight.value)
+});
+save();
+renderWeightList();
+updateDisplay();
+}
+
+function renderWeightList(){
+weightList.innerHTML="";
+weights.slice().reverse().forEach((w,i)=>{
+weightList.innerHTML+=`
+<div class="meal-row">
+${w.date} H:${w.hina}kg M:${w.hime}kg
+<button class="small-btn" onclick="deleteWeight(${weights.length-1-i})">刪</button>
+</div>`;
+});
+}
+
+function deleteWeight(i){
+weights.splice(i,1);
+save();
+renderWeightList();
+updateDisplay();
+}
+
+// 備份功能
+function exportData(){
+    const data = { foods, records, weights };
+    const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `HinaHime_Backup_${getToday()}.json`;
+    a.click();
+}
+
+// 匯入功能
+function importData(event){
+    const file = event.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e){
+        try {
+            const data = JSON.parse(e.target.result);
+            foods = data.foods || [];
+            records = data.records || {};
+            weights = data.weights || [];
+            save();
+            alert("資料匯入成功！");
+            location.reload();
+        } catch(err) { alert("讀取失敗，請確認檔案正確性"); }
+    };
+    reader.readAsText(file);
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+document.getElementById("datePicker").value = getToday();
+document.getElementById("datePicker").addEventListener("change", updateDisplay);
+
+renderCats();
+renderFoodList();
+renderWeightList();
+updateDisplay();
+});
+
+setInterval(()=>{
+  const today = getToday();
+  const picker = document.getElementById("datePicker");
+  if(picker && picker.value !== today){
+    picker.value = today;
+    updateDisplay();
+  }
+}, 60000);
+
+</script>
+</body>
+</html>
